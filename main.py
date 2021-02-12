@@ -14,7 +14,7 @@ while rows < 10:
     root.rowconfigure(rows, weight=1)
     root.columnconfigure(rows,weight=1)
     rows += 1
-# token_generator.generate_token(conn)
+
 print('connection made')
 
 interactor = database_interactor(conn, root)
