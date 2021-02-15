@@ -1,6 +1,8 @@
 import random
 from icecream import ic
-all_dicts={}
+
+all_dicts = {}
+
 
 def generate_vocab(conn):
     """:param conn: connection to the database
@@ -19,6 +21,7 @@ def generate_vocab(conn):
         vocab = "~%07d" % ran
     return vocab
 
+
 def get_table_names(conn):
     vals = conn.execute("SELECT type, name from sqlite_master")
     tbl_names = []
@@ -27,19 +30,26 @@ def get_table_names(conn):
             tbl_names.append(row[1])
     return tbl_names
 
+
 def search_value(val, conn):
     # ic(all_dicts)
     tbl_names = get_table_names(conn)
     values = []
     for tbl in tbl_names:
-        for d in all_dicts.get(tbl):
-            if str(all_dicts.get(tbl).get(d).lower()).__contains__(val.lower()):
-                values.append((tbl,d, all_dicts.get(tbl).get(d)))
+        if val[0] =='~':
+            for d in all_dicts.get(tbl):
+                if d == val:
+                    values.append((tbl, d, all_dicts.get(tbl).get(d)))
+        else:
+            for d in all_dicts.get(tbl):
+                if str(all_dicts.get(tbl).get(d).lower()).__contains__(val.lower()):
+                    values.append((tbl, d, all_dicts.get(tbl).get(d)))
     return values
     # ex = '''SELECT vocab,term,other FROM English_words WHERE term = %s'''%'~0897926'
     # data = conn.execute(ex)
     # for d in data:
     #     print(d)
+
 
 def load_db_data(conn):
     all_dicts.clear()
@@ -53,13 +63,43 @@ def load_db_data(conn):
         all_dicts[tbl] = lang_dict
     # ic(all_dicts)
 
+
 def get_vocab(dic, vocab):
     return all_dicts.get(dic).get(vocab)
 
+
 def add_to_db(conn, tbl, term):
-    vocab = generate_vocab(conn)
-    other = 'NA'
-    vals_en = '''('%s','%s','%s')''' % (vocab, term, other)
-    addition_en = '''INSERT INTO %s (vocab, term, other)VALUES %s''' % (tbl, vals_en)
-    conn.execute(addition_en)
-    conn.commit()
+    process = True
+    for i in all_dicts.get(tbl):
+        if term == all_dicts.get(tbl).get(i).lower():
+            process = False
+    if process:
+        vocab = generate_vocab(conn)
+        other = 'NA'
+        vals_en = '''('%s','%s','%s')''' % (vocab, term, other)
+        addition_en = '''INSERT INTO %s (vocab, term, other)VALUES %s''' % (tbl, vals_en)
+        conn.execute(addition_en)
+        conn.commit()
+        all_dicts.get(tbl)[vocab]=term
+    return process
+# check existence in DB func
+# compare for missing terms func
+def compare(tbl1, tbl2, different):
+    comp1 =[]
+    comp2 =[]
+    if different == 1:
+        for v in all_dicts.get(tbl1):
+            if v not in all_dicts.get(tbl2):
+                comp1.append((v,all_dicts.get(tbl1).get(v)))
+        for v in all_dicts.get(tbl2):
+            if v not in all_dicts.get(tbl1):
+                comp2.append((v,all_dicts.get(tbl2).get(v)))
+        ic(comp1, comp2)
+        return comp1, comp2
+
+    else:
+        for v in all_dicts.get(tbl1):
+            comp1.append((v,all_dicts.get(tbl1).get(v)))
+        for v in all_dicts.get(tbl2):
+            comp2.append((v,all_dicts.get(tbl2).get(v)))
+        return comp1, comp2

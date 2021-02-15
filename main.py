@@ -8,7 +8,7 @@ from icecream import ic
 conn = sqlite3.connect('language_dict.db')
 root = Tk()
 root.title('Language DB 1.0')  # title for window
-root.geometry('600x600+0+0')  # main window geometry
+root.geometry('900x600+0+0')  # main window geometry
 rows = 0
 while rows < 10:
     root.rowconfigure(rows, weight=1)
