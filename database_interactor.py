@@ -38,7 +38,6 @@ class database_interactor:
         btn_add.grid(row=0, column=10, sticky=NE)
 
     def search_listener(self):
-
         self.clear_window()
         self.inputs.clear()
         self.root.bind('<Return>', lambda event: self.search_val())
@@ -57,14 +56,11 @@ class database_interactor:
                           command=self.reset,
                           fg="black", bg="light gray")
         btn_menu.grid(row=9, column=10, sticky=W)
-
-
         display_box = Text(self.root)
-        display_box.grid(row=2, column=0, columnspan= 15, sticky=W)
+        display_box.grid(row=2, column=0, sticky=W)
         self.inputs['display'] = display_box
 
     def add_listener(self):
-        ic(self.inputs)
         self.clear_window()
         self.inputs.clear()
         tables = []
@@ -163,9 +159,9 @@ class database_interactor:
         dictionary = self.inputs.get('option1').get()
 
         display1 = Text(self.root)
-        display1.grid(row=2, column=0, columnspan=15, sticky=W)
+        display1.grid(row=2, column=0, sticky=W)
         display2 = Text(self.root)
-        display2.grid(row=2, column=5, columnspan=15, sticky=W)
+        display2.grid(row=2, column=5, sticky=W)
         for r in results[0]:
             vocab = r[0]
             term = r[1]
@@ -186,11 +182,14 @@ class database_interactor:
             if i != 'add':
                 processed = db_tools.add_to_db(self.db_conn, i, self.inputs.get(i).get())
                 if not processed:
-                    Label(self.root, text = self.inputs.get(i).get()+' not processed for dictionary '+ i,
+                    ic('here')
+                    self.clear_window()
+                    Label(self.root, text = self.inputs.get(i).get()+'\n not processed dictionary '+ i+' already contains term',
                           font = self.larger_font).grid(row = unprocessed_row, column =5,sticky = N)
-                    unprocessed_row+=1
+                    unprocessed_row+=2
                     self.root.after(1000, self.reset)
-        self.reset()
+                else:
+                    self.reset()
 
     def reset(self):
         self.clear_window()
@@ -219,13 +218,16 @@ class database_interactor:
         term = data[2]
         ins = '%s\n %s\t%s\n' % (dictionary, vocab, term)
         display.insert(INSERT, ins)
-        if dictionary == 'ICD10_words' and val[0]!='~':
-            dictionary = 'ICD10_codes'
-            code = db_tools.get_vocab(dictionary, data[1])
-            ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
-            display.insert(INSERT, ins)
-        elif dictionary == 'UMLS_words' and val[0]!='~':
-            dictionary = 'UMLS_CUI'
-            code = db_tools.get_vocab(dictionary, data[1])
-            ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
-            display.insert(INSERT, ins)
+        if not val:
+            pass
+        else:
+            if dictionary == 'ICD10_words' and val[0]!='~':
+                dictionary = 'ICD10_codes'
+                code = db_tools.get_vocab(dictionary, data[1])
+                ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
+                display.insert(INSERT, ins)
+            elif dictionary == 'UMLS_words' and val[0]!='~':
+                dictionary = 'UMLS_CUI'
+                code = db_tools.get_vocab(dictionary, data[1])
+                ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
+                display.insert(INSERT, ins)

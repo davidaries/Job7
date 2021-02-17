@@ -32,24 +32,23 @@ def get_table_names(conn):
 
 
 def search_value(val, conn):
-    # ic(all_dicts)
     tbl_names = get_table_names(conn)
     values = []
-    for tbl in tbl_names:
-        if val[0] =='~':
+    if not val: # Check for no input
+        for tbl in tbl_names:
             for d in all_dicts.get(tbl):
-                if d == val:
-                    values.append((tbl, d, all_dicts.get(tbl).get(d)))
-        else:
-            for d in all_dicts.get(tbl):
-                if str(all_dicts.get(tbl).get(d).lower()).__contains__(val.lower()):
-                    values.append((tbl, d, all_dicts.get(tbl).get(d)))
+                values.append((tbl, d, all_dicts.get(tbl).get(d)))
+    else:
+        for tbl in tbl_names:
+            if val[0] != '~':
+                for d in all_dicts.get(tbl):
+                    if str(all_dicts.get(tbl).get(d).lower()).__contains__(val.lower()):
+                        values.append((tbl, d, all_dicts.get(tbl).get(d)))
+            else:
+                for d in all_dicts.get(tbl):
+                    if d == val:
+                        values.append((tbl, d, all_dicts.get(tbl).get(d)))
     return values
-    # ex = '''SELECT vocab,term,other FROM English_words WHERE term = %s'''%'~0897926'
-    # data = conn.execute(ex)
-    # for d in data:
-    #     print(d)
-
 
 def load_db_data(conn):
     all_dicts.clear()
@@ -80,26 +79,29 @@ def add_to_db(conn, tbl, term):
         addition_en = '''INSERT INTO %s (vocab, term, other)VALUES %s''' % (tbl, vals_en)
         conn.execute(addition_en)
         conn.commit()
-        all_dicts.get(tbl)[vocab]=term
+        all_dicts.get(tbl)[vocab] = term
+    ic(process)
     return process
+
+
 # check existence in DB func
 # compare for missing terms func
 def compare(tbl1, tbl2, different):
-    comp1 =[]
-    comp2 =[]
-    if different == 1:
+    comp1 = []
+    comp2 = []
+    if different == 1 and tbl1 and tbl2:
         for v in all_dicts.get(tbl1):
             if v not in all_dicts.get(tbl2):
-                comp1.append((v,all_dicts.get(tbl1).get(v)))
+                comp1.append((v, all_dicts.get(tbl1).get(v)))
         for v in all_dicts.get(tbl2):
             if v not in all_dicts.get(tbl1):
-                comp2.append((v,all_dicts.get(tbl2).get(v)))
-        ic(comp1, comp2)
-        return comp1, comp2
+                comp2.append((v, all_dicts.get(tbl2).get(v)))
 
     else:
-        for v in all_dicts.get(tbl1):
-            comp1.append((v,all_dicts.get(tbl1).get(v)))
-        for v in all_dicts.get(tbl2):
-            comp2.append((v,all_dicts.get(tbl2).get(v)))
-        return comp1, comp2
+        if tbl1:
+            for v in all_dicts.get(tbl1):
+                comp1.append((v, all_dicts.get(tbl1).get(v)))
+        if tbl2:
+            for v in all_dicts.get(tbl2):
+                comp2.append((v, all_dicts.get(tbl2).get(v)))
+    return comp1, comp2
