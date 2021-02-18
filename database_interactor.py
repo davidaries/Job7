@@ -8,6 +8,19 @@ from icecream import ic
 
 
 class database_interactor:
+    """Class database_interactor populates the root window with various widgets used for searching the database,
+    comparing tables, and adding to the database.  When the interactor first loads, the user is able to choose
+    between these three options at the top and upon selecting an option the corresponding widgets will be populated
+    to the window.  There is also a menu button added to the bottom of the screen allowing the user to go back and choose
+    a different log interaction option.  The user interacts with what has been displayed on the screen and
+    database_interactor then makes the corresponding calls to db_tools (to add data to or get data from the database)
+    :param self.db_conn: a reference to the established connection with the database
+    :type self.db_conn: sqlite3.Connection
+    :param self.root: a reference to the root window
+    :type self.root: tk Window
+    :param self.medium_font:
+    :param self.larger_font:
+    :param self.inputs"""
 
     def __init__(self, connection, root):
         self.db_conn = connection
@@ -44,7 +57,7 @@ class database_interactor:
 
         text_entered = StringVar
 
-        entry_box = Entry(self.root, textvariable=text_entered, font=self.medium_font, width =50)
+        entry_box = Entry(self.root, textvariable=text_entered, font=self.medium_font, width=50)
         entry_box.grid(row=1, column=0, sticky='W')
         self.inputs['search'] = entry_box
         # self.widgets.append((value, entry_box, info[1]))
@@ -71,6 +84,7 @@ class database_interactor:
         option = StringVar(self.root)
         self.inputs['add'] = option
         drop_down = OptionMenu(self.root, option, *tables)
+        option.trace('w', self.add_to_tbl)
         drop_down.grid(row=0, column=0, sticky=W, columnspan=10)
         btn_add = Button(self.root, text='=>', font=self.medium_font,
                          command=self.add_to_tbl,
@@ -81,38 +95,38 @@ class database_interactor:
                           fg="black", bg="light gray")
         btn_menu.grid(row=9, column=10, sticky=W)
 
-    def add_to_tbl(self):
+    def add_to_tbl(self, *args):
         self.clear_window()
 
         opt = self.inputs.get('add').get()
         self.add_listener()
-
+        Label(self.root, text=opt, font=self.larger_font).grid(row=1, column=0, sticky=W)
         term_e = StringVar()
         term_s = StringVar()
         code = StringVar()
         if opt == 'English_words':
-            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0)
-            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5)
+            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0, sticky=W)
+            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5, sticky=W)
             self.inputs['English_words'] = term_e
         elif opt == 'Spanish_words':
-            Label(self.root, text='Término: ', font=self.medium_font).grid(row=2, column=0)
-            Label(self.root, text='Term: ', font=self.medium_font).grid(row=3, column=0)
-            Entry(self.root, textvariable=term_s, font=self.medium_font).grid(row=2, column=1, columnspan=5)
-            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=3, column=1, columnspan=5)
+            Label(self.root, text='Término: ', font=self.medium_font).grid(row=2, column=0, sticky=W)
+            Label(self.root, text='Term: ', font=self.medium_font).grid(row=3, column=0, sticky=W)
+            Entry(self.root, textvariable=term_s, font=self.medium_font).grid(row=2, column=1, columnspan=5, sticky=W)
+            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=3, column=1, columnspan=5, sticky=W)
             self.inputs['Spanish_words'] = term_s
             self.inputs['English_words'] = term_e
         elif opt == 'UMLS_words':
-            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0)
-            Label(self.root, text='Code: ', font=self.medium_font).grid(row=3, column=0)
-            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5)
-            Entry(self.root, textvariable=code, font=self.medium_font).grid(row=3, column=1, columnspan=5)
+            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0, sticky=W)
+            Label(self.root, text='Code: ', font=self.medium_font).grid(row=3, column=0, sticky=W)
+            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5, sticky=W)
+            Entry(self.root, textvariable=code, font=self.medium_font).grid(row=3, column=1, columnspan=5, sticky=W)
             self.inputs['UMLS_words'] = term_e
             self.inputs['UMLS_CUI'] = code
         elif opt == 'ICD10_words':
-            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0)
-            Label(self.root, text='Code: ', font=self.medium_font).grid(row=3, column=0)
-            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5)
-            Entry(self.root, textvariable=code, font=self.medium_font).grid(row=3, column=1, columnspan=5)
+            Label(self.root, text='Term: ', font=self.medium_font).grid(row=2, column=0, sticky=W)
+            Label(self.root, text='Code: ', font=self.medium_font).grid(row=3, column=0, sticky=W)
+            Entry(self.root, textvariable=term_e, font=self.medium_font).grid(row=2, column=1, columnspan=5, sticky=W)
+            Entry(self.root, textvariable=code, font=self.medium_font).grid(row=3, column=1, columnspan=5, sticky=W)
             self.inputs['ICD10_words'] = term_e
             self.inputs['ICD10_codes'] = code
         btn_add = Button(self.root, text='Add', font=self.medium_font,
@@ -142,20 +156,21 @@ class database_interactor:
         drop_down.grid(row=0, column=5, sticky=W, columnspan=10)
         checked = IntVar()
         box = Checkbutton(self.root, text='Only different', variable=checked,
-                          onvalue=1, offvalue=0, font = self.medium_font)
+                          onvalue=1, offvalue=0, font=self.medium_font)
         self.inputs['different'] = checked
-        box.grid(row= 0, column=9, sticky=W)
+        box.grid(row=0, column=9, sticky=W)
         btn_menu = Button(self.root, text='Menu', font=self.medium_font,
                           command=self.reset,
                           fg="black", bg="light gray", width=10)
         btn_menu.grid(row=9, column=10, sticky=W)
         btn_compare = Button(self.root, text='Compare', font=self.medium_font,
-                          command=self.compare_db,
-                          fg="black", bg="light gray", width=10)
+                             command=self.compare_db,
+                             fg="black", bg="light gray", width=10)
         btn_compare.grid(row=9, column=0, sticky=W)
 
     def compare_db(self):
-        results = db_tools.compare(self.inputs.get('option1').get(),self.inputs.get('option2').get(),self.inputs.get('different').get())
+        results = db_tools.compare(self.inputs.get('option1').get(), self.inputs.get('option2').get(),
+                                   self.inputs.get('different').get())
         dictionary = self.inputs.get('option1').get()
 
         display1 = Text(self.root)
@@ -173,23 +188,23 @@ class database_interactor:
             term = r[1]
             ins = '%s\n %s\t%s\n' % (dictionary, vocab, term)
             display2.insert(INSERT, ins)
+
     def process_adds(self):
-        processed = True
         unprocessed_row = 0
         self.clear_window()
-        for i in self.inputs:
-            processed = True
-            if i != 'add':
-                processed = db_tools.add_to_db(self.db_conn, i, self.inputs.get(i).get())
-                if not processed:
-                    ic('here')
-                    self.clear_window()
-                    Label(self.root, text = self.inputs.get(i).get()+'\n not processed dictionary '+ i+' already contains term',
-                          font = self.larger_font).grid(row = unprocessed_row, column =5,sticky = N)
-                    unprocessed_row+=2
-                    self.root.after(1000, self.reset)
-                else:
-                    self.reset()
+        self.inputs.pop('add')
+        unprocessed = db_tools.add_to_db(self.db_conn, self.inputs)
+        if unprocessed:
+            self.clear_window()
+            error = Tk()
+            error.geometry("330x400")
+            for up in unprocessed:
+                Label(error,
+                      text=up[1] + '\n not processed for dictionary ' + up[0],
+                      font=self.larger_font).grid(row=unprocessed_row, column=5, sticky=N)
+                unprocessed_row += 2
+            self.root.after(2000, error.destroy)
+        self.reset()
 
     def reset(self):
         self.clear_window()
@@ -221,12 +236,12 @@ class database_interactor:
         if not val:
             pass
         else:
-            if dictionary == 'ICD10_words' and val[0]!='~':
+            if dictionary == 'ICD10_words' and val[0] != '~':
                 dictionary = 'ICD10_codes'
                 code = db_tools.get_vocab(dictionary, data[1])
                 ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
                 display.insert(INSERT, ins)
-            elif dictionary == 'UMLS_words' and val[0]!='~':
+            elif dictionary == 'UMLS_words' and val[0] != '~':
                 dictionary = 'UMLS_CUI'
                 code = db_tools.get_vocab(dictionary, data[1])
                 ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
