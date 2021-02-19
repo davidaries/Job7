@@ -20,6 +20,6 @@ while rows < 10:
     rows += 1
 # load and populate the database interactor
 interactor = database_interactor(conn, root)
-interactor.populate()
+interactor.menu()
 
 root.mainloop()

@@ -30,12 +30,10 @@ class database_interactor:
         self.larger_font = tk_font.Font(root=self.root.master, family='Helvetica', size=14, weight=tk_font.BOLD)
         self.inputs = {}
 
-    def populate(self):
-        self.menu()
-
     def menu(self):  # finish compare func
-        print('starting')
-        # search DB
+        """Sets up the main menu of the window with three buttons on the top for navigating to the search functionality,
+        the compare functionality, or the add functionality
+        """
         btn_search = Button(self.root, text='Search', font=self.larger_font,
                             command=self.search_listener,
                             fg="black", bg="light gray")
@@ -51,6 +49,9 @@ class database_interactor:
         btn_add.grid(row=0, column=10, sticky=NE)
 
     def search_listener(self):
+        """When the search functionality the is selected from the menu a search field is added to the window as well
+        as a button enables the search (search is also binded to the return key).  Once the user enters a search value
+        and enters it, the value is sent to process_adds function to process the values written"""
         self.clear_window()
         self.inputs.clear()
         self.root.bind('<Return>', lambda event: self.search_val())
@@ -74,6 +75,9 @@ class database_interactor:
         self.inputs['display'] = display_box
 
     def add_listener(self):
+        """When the add functionality the is selected from the menu, a drop down menu is presented that will allow
+        the user to select from the various tables to add the appropriate values.  When the user has selected a table
+        to add to, the process adds function is called to handle the adds for that table."""
         self.clear_window()
         self.inputs.clear()
         tables = []
@@ -86,16 +90,16 @@ class database_interactor:
         drop_down = OptionMenu(self.root, option, *tables)
         option.trace('w', self.add_to_tbl)
         drop_down.grid(row=0, column=0, sticky=W, columnspan=10)
-        btn_add = Button(self.root, text='=>', font=self.medium_font,
-                         command=self.add_to_tbl,
-                         fg="black", bg="light gray")
-        btn_add.grid(row=0, column=1, sticky=E)
         btn_menu = Button(self.root, text='Menu', font=self.medium_font,
                           command=self.reset,
                           fg="black", bg="light gray")
         btn_menu.grid(row=9, column=10, sticky=W)
 
     def add_to_tbl(self, *args):
+        """Adds the appropriate input fields for the different tables, which are then added to the database
+        :param args: needs to be included to allow the user to select an item from the drop down and have it call this
+        function
+        """
         self.clear_window()
 
         opt = self.inputs.get('add').get()
@@ -139,6 +143,10 @@ class database_interactor:
         btn_menu.grid(row=9, column=10, sticky=W)
 
     def compare_listener(self):
+        """When the compare functionality the is selected from the menu, two drop down menus are populated to allow the
+        user to choose the tables they are comparing.  Once the user has selected the tables they wish to compare (and
+        whether they wish to display only the different values) the compared values are displayed on the Text boxers
+        created by the compare db function."""
         self.clear_window()
         self.inputs.clear()
         tables1 = []
@@ -169,6 +177,8 @@ class database_interactor:
         btn_compare.grid(row=9, column=0, sticky=W)
 
     def compare_db(self):
+        """compares the values between two different dictionaries and adds all of the compared values to two
+        text boxes after being formatted for display"""
         results = db_tools.compare(self.inputs.get('option1').get(), self.inputs.get('option2').get(),
                                    self.inputs.get('different').get())
         dictionary = self.inputs.get('option1').get()
@@ -190,6 +200,8 @@ class database_interactor:
             display2.insert(INSERT, ins)
 
     def process_adds(self):
+        """sends all of the add values to the db_tools module to be processed and added to the database.  Displays
+        the values not added to the database when values already exist in the database"""
         unprocessed_row = 0
         self.clear_window()
         self.inputs.pop('add')
@@ -207,6 +219,7 @@ class database_interactor:
         self.reset()
 
     def reset(self):
+        """resets all of the values in database_interactor and returns the user to the menu"""
         self.clear_window()
         self.inputs.clear()
         self.menu()
@@ -219,6 +232,7 @@ class database_interactor:
             widget.destroy()
 
     def search_val(self):
+        """Displays all of the values returned by the db_tools search function to a text box in the UI"""
         val = self.inputs.get('search').get()
         display = self.inputs.get('display')
         display.delete("1.0", "end")
@@ -228,21 +242,16 @@ class database_interactor:
             self.format_display(data, display, val)
 
     def format_display(self, data, display, val):
+        """"formats and writes all of the values to the display seen in the UI
+        SHOULD BE ABLE TO REMOVE THE VAL WITH THE NEW HANDLING OF SEARCH, WILL EDIT THIS OUT IF NOT NEEDED
+        :param data, the data from the db table to be displayed in the textbox
+        :type data: list
+        :param display: reference to the display box
+        :type display: tk Text
+        """
         dictionary = data[0]
         vocab = data[1]
         term = data[2]
         ins = '%s\n %s\t%s\n' % (dictionary, vocab, term)
         display.insert(INSERT, ins)
-        if not val:
-            pass
-        else:
-            if dictionary == 'ICD10_words' and val[0] != '~':
-                dictionary = 'ICD10_codes'
-                code = db_tools.get_vocab(dictionary, data[1])
-                ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
-                display.insert(INSERT, ins)
-            elif dictionary == 'UMLS_words' and val[0] != '~':
-                dictionary = 'UMLS_CUI'
-                code = db_tools.get_vocab(dictionary, data[1])
-                ins = '%s\n %s\t%s\n' % (dictionary, vocab, code)
-                display.insert(INSERT, ins)
+

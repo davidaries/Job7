@@ -5,7 +5,9 @@ all_dicts = {}
 
 
 def generate_vocab(conn):
-    """:param conn: connection to the database
+    """creates a ~vocab (~XXXXXXX) (where x is in number 0-9) to be assigned to a database entry by creating a random
+    value between 0 and 9999999 (with leading zeros)
+    :param conn: connection to the database
     :type conn: sqlite3.Connection"""
     used_vocabs = []
     vals = conn.execute("SELECT vocab, term, other from English_words")
@@ -23,6 +25,11 @@ def generate_vocab(conn):
 
 
 def get_table_names(conn):
+    """returns all of the names of the tables in the database
+    :param conn: connection to the database
+    :type conn: sqlite3.Connection
+    :return: the values of all of the table names
+    :rtype: list"""
     vals = conn.execute("SELECT type, name from sqlite_master")
     tbl_names = []
     for row in vals:
@@ -32,9 +39,18 @@ def get_table_names(conn):
 
 
 def search_value(val, conn):
+    """searches a value from all of the possible values in the database.  Checks and adds ICD10 and UMLS codes if not
+    given a ~vocab value
+    :param val: value to be searched from the database
+    :type val: str
+    :param conn: connection to the database
+    :type conn: sqlite3.Connection
+    :return: the values matched by the search
+    :rtype: list
+    """
     tbl_names = get_table_names(conn)
     values = []
-    if not val: # Check for no input
+    if not val:  # Check for no input
         for tbl in tbl_names:
             for d in all_dicts.get(tbl):
                 values.append((tbl, d, all_dicts.get(tbl).get(d)))
@@ -42,15 +58,28 @@ def search_value(val, conn):
         for tbl in tbl_names:
             if val[0] != '~':
                 for d in all_dicts.get(tbl):
-                    if str(all_dicts.get(tbl).get(d).lower()).__contains__(val.lower()):
-                        values.append((tbl, d, all_dicts.get(tbl).get(d)))
+                    if str(get_vocab(tbl, d).lower()).__contains__(val.lower()):
+                        values.append((tbl, d, get_vocab(tbl, d)))
             else:
                 for d in all_dicts.get(tbl):
                     if d == val:
-                        values.append((tbl, d, all_dicts.get(tbl).get(d)))
+                        values.append((tbl, d, get_vocab(tbl, d)))
+    if val[0] != '~':
+        for v in values:
+            if v[0] == 'ICD10_words':
+                tbl = 'ICD10_codes'
+                values.append((tbl, v[1], get_vocab(tbl, v[1])))
+            if v[0] == 'UMLS_words':
+                tbl = 'UMLS_CUI'
+                values.append((tbl, v[1], get_vocab(tbl, v[1])))
+
     return values
 
+
 def load_db_data(conn):
+    """loads all of the values in the current database and create a dictionary of dictionaries of those values
+    :param conn: connection to the database
+    :type conn: sqlite3.Connection"""
     all_dicts.clear()
     tbl_names = get_table_names(conn)
     for tbl in tbl_names:
@@ -63,10 +92,21 @@ def load_db_data(conn):
 
 
 def get_vocab(dic, vocab):
+    """returns a specific vocab value from a specific dictionary
+    :return: the value described above
+    :rtype: str"""
     return all_dicts.get(dic).get(vocab)
 
 
 def add_to_db(conn, add_dict):
+    """adds values to the database and the dictionary used by the db interactor
+    :param conn: connection to the database
+    :type conn: sqlite3.Connection
+    :param add_dict: The value to be added to the databse
+    :type add_dict: dict
+    :return: a list of all of the values not added to the db and the dictionary
+    :rtype: list
+    """
     vocab = generate_vocab(conn)
     keys = add_dict.keys()
     to_process = []
@@ -85,13 +125,24 @@ def add_to_db(conn, add_dict):
             conn.commit()
             all_dicts.get(p[1])[vocab] = p[2]
         else:
-            unprocessed.append([p[1],p[2]])
+            unprocessed.append([p[1], p[2]])
     return unprocessed
 
 
 # check existence in DB func
 # compare for missing terms func
 def compare(tbl1, tbl2, different):
+    """Compares and returns the values from two different tables.  if the different value is true, the return is only
+    the values that the two dictionaries don't have in common.  Otherwise, both dictionaries are returned in full
+    :param tbl1: the first table to be compared
+    :type tbl1: str
+    :param tbl2: the second table to be compared
+    :type tbl2: str
+    :param different: a value that says whether the tables should only return the differences
+    :type different: bool
+    :return: the two lists for the compared tables
+    :rtype: list, list
+    """
     comp1 = []
     comp2 = []
     if different == 1 and tbl1 and tbl2:
