@@ -2,7 +2,7 @@ import random
 from icecream import ic
 
 all_dicts = {}
-
+tbl_special = []
 
 def generate_vocab(conn):
     """creates a ~vocab (~XXXXXXX) (where x is in number 0-9) to be assigned to a database entry by creating a random
@@ -52,28 +52,60 @@ def search_value(val, conn):
     values = []
     if not val:  # Check for no input
         for tbl in tbl_names:
-            for d in all_dicts.get(tbl):
-                values.append((tbl, d, all_dicts.get(tbl).get(d)))
+            if tbl not in tbl_special:
+                for d in all_dicts.get(tbl):
+                    values.append((tbl, d, all_dicts.get(tbl).get(d)))
     else:
         for tbl in tbl_names:
-            if val[0] != '~':
-                for d in all_dicts.get(tbl):
-                    if str(get_vocab(tbl, d).lower()).__contains__(val.lower()):
-                        values.append((tbl, d, get_vocab(tbl, d)))
-            else:
-                for d in all_dicts.get(tbl):
-                    if d == val:
-                        values.append((tbl, d, get_vocab(tbl, d)))
-    if val[0] != '~':
-        for v in values:
-            if v[0] == 'ICD10_words':
-                tbl = 'ICD10_codes'
-                values.append((tbl, v[1], get_vocab(tbl, v[1])))
-            if v[0] == 'UMLS_words':
-                tbl = 'UMLS_CUI'
-                values.append((tbl, v[1], get_vocab(tbl, v[1])))
+            if tbl not in tbl_special:
+                if val[0] != '~':
+                    for d in all_dicts.get(tbl):
+                        # ic(get_vocab(tbl, d).lower())
+                        if str(get_vocab(tbl, d).lower()).__contains__(val.lower()):
+                            values.append((tbl, d, get_vocab(tbl, d)))
+                else:
+                    for d in all_dicts.get(tbl):
+                        if d == val:
+                            values.append((tbl, d, get_vocab(tbl, d)))
+        if val[0] != '~':
+            for v in values:
+                if v[0] == 'ICD10_words':
+                    tbl = 'ICD10_codes'
+                    values.append((tbl, v[1], get_vocab(tbl, v[1])))
+                if v[0] == 'UMLS_words':
+                    tbl = 'UMLS_CUI'
+                    values.append((tbl, v[1], get_vocab(tbl, v[1])))
 
     return values
+    # tbl_names = get_table_names(conn)
+    # values = []
+    # if not val:  # Check for no input
+    #     for tbl in tbl_names:
+    #         for d in all_dicts.get(tbl):
+    #             values.append((tbl, d[0], get_vocab(tbl, d)[1]))
+    # else:
+    #     for tbl in tbl_names:
+    #         if val[0] != '~':
+    #             for d in all_dicts.get(tbl):
+    #                 if str(get_vocab(tbl, d)[1].lower()).__contains__(val.lower()):
+    #                     values.append((tbl, d[0], get_vocab(tbl, d)[1]))
+    #         else:
+    #             ic(tbl)
+    #             ic(all_dicts.get(tbl))
+    #             for d in all_dicts.get(tbl):
+    #                 ic(d)
+    #                 if d[0] == val:
+    #                     values.append((tbl, d[0], get_vocab(tbl, d)[1]))
+    #     if val[0] != '~':
+    #         for v in values:
+    #             if v[0] == 'ICD10_words':
+    #                 tbl = 'ICD10_codes'
+    #                 values.append((tbl, v[1], get_vocab(tbl, v[1])[1]))
+    #             if v[0] == 'UMLS_words':
+    #                 tbl = 'UMLS_CUI'
+    #                 values.append((tbl, v[1], get_vocab(tbl, v[1])[1]))
+    #
+    # return values
 
 
 def load_db_data(conn):
@@ -82,6 +114,10 @@ def load_db_data(conn):
     :type conn: sqlite3.Connection"""
     all_dicts.clear()
     tbl_names = get_table_names(conn)
+
+    tbl_special.append(tbl_names.pop(tbl_names.index('Categories')))
+    tbl_special.append(tbl_names.pop(tbl_names.index('English_synonyms')))
+    # ic(tbl_special)
     for tbl in tbl_names:
         ex = "SELECT * from %s" % tbl
         vals = conn.execute(ex)
@@ -90,12 +126,41 @@ def load_db_data(conn):
             lang_dict[v[0]] = v[1]
         all_dicts[tbl] = lang_dict
 
+    # all_dicts.clear()
+    # tbl_names = get_table_names(conn)
+    for tbl in tbl_special:
+        ex = "SELECT * from %s" % tbl
+        vals = conn.execute(ex)
+        lang_dict = []
+        for v in vals:
+            lang_dict.append((v[0],v[1]))
+        all_dicts[tbl] = lang_dict
+
+def get_categories(vocab):
+    dic = 'Categories'
+    return [(dic,c[0],c[1]) for c in all_dicts[dic] if c[0] == vocab]
+    # for c in all_dicts[dic]:
+    #     if c[0] == vocab:
+    #         ic(c[0])
+
+
+def get_synonyms(vocab):
+    dic = 'English_synonyms'
+    ic(vocab)
+    ic(all_dicts[dic])
+    return [(dic,c[0],c[1]) for c in all_dicts[dic] if c[0] == vocab]
 
 def get_vocab(dic, vocab):
     """returns a specific vocab value from a specific dictionary
     :return: the value described above
     :rtype: str"""
-    return all_dicts.get(dic).get(vocab)
+    if dic not in tbl_special:
+        return all_dicts.get(dic).get(vocab)
+    else:
+        return [all_dicts[dic][1] for v in all_dicts[dic] if v[0] == vocab]
+        # for v in all_dicts[dic]:
+        #     if v[0] == vocab[0]:
+        #         return v[1]
 
 
 def add_to_db(conn, add_dict):
