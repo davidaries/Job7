@@ -249,7 +249,7 @@ class database_interactor:
         entry_box = Entry(add, textvariable=text_entered, font=self.medium_font, width=50)
         entry_box.grid(row=1, column=0, sticky='W')
         self.inputs['add'] = entry_box
-        btn_add_syn = Button(add, text='Add Synonym', font=self.medium_font,
+        btn_add_syn = Button(add, text='Add Value', font=self.medium_font,
                              command=lambda: db_tools.add_other(self.db_conn, 'English_synonyms', vocab, entry_box),
                              fg="black", bg="light gray")
         btn_add_syn.grid(row=1, column=1)
