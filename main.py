@@ -1,6 +1,6 @@
 from tkinter import *
 import sqlite3
-from database_interactor import database_interactor
+from ui_interactor import database_interactor
 import db_tools
 import initial_load
 from icecream import ic

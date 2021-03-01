@@ -3,6 +3,12 @@ from tkinter import font as tk_font
 import db_tools
 from icecream import ic
 
+"""Successful or failed mini add
+Token search for synonyms
+remove duplicates from view
+Remove categories from 
+"""
+
 
 class database_interactor:
     """Class database_interactor populates the root window with various widgets used for searching the database,
@@ -26,7 +32,7 @@ class database_interactor:
         self.medium_font = tk_font.Font(root=self.root.master, family='Helvetica', size=12, weight=tk_font.BOLD)
         self.larger_font = tk_font.Font(root=self.root.master, family='Helvetica', size=14, weight=tk_font.BOLD)
         self.inputs = {}
-        self.special_add={}
+        self.special_add = {}
         self.lang_to_dict = {'English': 'English_words', 'Espanol': 'Spanish_words'}
         self.lang = StringVar()
         self.lang.set('English')
@@ -42,10 +48,10 @@ class database_interactor:
         btn_compare = Button(self.root, text='Compare', font=self.larger_font,
                              command=self.compare_listener,
                              fg="black", bg="light gray")
-        btn_compare.grid(row=0, column=4, sticky=N, columnspan = 2)
+        btn_compare.grid(row=0, column=4, sticky=N, columnspan=2)
         drop_down = OptionMenu(self.root, self.lang, *self.lang_to_dict.keys())
-        drop_down.config(font = self.medium_font)
-        drop_down.grid(row=1, column=4, sticky=N, columnspan =2)
+        drop_down.config(font=self.medium_font)
+        drop_down.grid(row=1, column=4, sticky=N, columnspan=2)
         # add to DB
         btn_add = Button(self.root, text='Add', font=self.larger_font,
                          command=self.add_listener,
@@ -67,17 +73,21 @@ class database_interactor:
         self.inputs['search'] = entry_box
         # self.widgets.append((value, entry_box, info[1]))
         btn_add_syn = Button(self.root, text='Add Synonym', font=self.medium_font,
-                            command=self.syn_add,
-                            fg="black", bg="light gray")
+                             command=self.syn_add,
+                             fg="black", bg="light gray")
         btn_add_syn.grid(row=2, column=1, sticky=W)
-        btn_add_syn.config(state = DISABLED)
-        self.inputs['add_syn'] = btn_add_syn
+        btn_add_syn = Button(self.root, text='Add Category', font=self.medium_font,
+                             command=self.add_cat,
+                             fg="black", bg="light gray")
+        btn_add_syn.grid(row=2, column=2, sticky=W)
+        # btn_add_syn.config(state = DISABLED)
+        # self.inputs['add_syn'] = btn_add_syn
         # btn_search
         btn_menu = Button(self.root, text='Menu', font=self.medium_font,
                           command=self.reset,
                           fg="black", bg="light gray")
         btn_menu.grid(row=9, column=10, sticky=W)
-        display_box = Listbox(self.root, width = 100, height =20)
+        display_box = Listbox(self.root, width=100, height=20)
         display_box.grid(row=2, column=0, sticky=W)
         self.inputs['display'] = display_box
         categories_checked = IntVar()
@@ -95,20 +105,36 @@ class database_interactor:
         """only synonyms for primary languaes
         STILL NEED TO CHECK FOR PRIMARY LANGUAGES AND PROCESS THE ADDS
         IN CURRENT FORM CANNOT USE CURRENT ADD TO DB METHOD, NEED TO REWORK"""
+        selected_value = self.inputs['display'].get(ANCHOR)
         add = Tk()
         add.geometry("600x400")
-        ic(self.inputs['display'].get(ANCHOR))
+        vocab = '~' + selected_value.split('~')[1][0:7]
         text_entered = StringVar()
-        Label(add, text =self.inputs['display'].get(ANCHOR)).grid(row =0, column = 0, sticky = W)
+        Label(add, text=selected_value).grid(row=0, column=0, sticky=W)
         entry_box = Entry(add, textvariable=text_entered, font=self.medium_font, width=50)
         entry_box.grid(row=1, column=0, sticky='W')
         self.inputs['add'] = entry_box
-        # self.widgets.append((value, entry_box, info[1]))
         btn_add_syn = Button(add, text='Add Synonym', font=self.medium_font,
-                             command=self.syn_add,
+                             command=lambda: db_tools.add_other(self.db_conn, 'English_synonyms', vocab, entry_box),
                              fg="black", bg="light gray")
         btn_add_syn.grid(row=1, column=1)
-        ic(self.inputs)
+
+    #     ADD ERROR POPUP
+    def add_cat(self):
+        selected_value = self.inputs['display'].get(ANCHOR)
+        add = Tk()
+        add.geometry("600x400")
+        vocab = '~' + selected_value.split('~')[1][0:7]
+        categories = db_tools.get_remaining_categories(vocab)
+        ic(categories)
+        option = StringVar(add)
+        Label(add, text=selected_value).grid(row=0, column=0, sticky=W)
+        cat_opt = OptionMenu(add, option, *categories)
+        cat_opt.grid(row=1, column=0, sticky='W')
+        btn_add_category = Button(add, text='Add Category', font=self.medium_font,
+                             command=lambda: db_tools.add_other(self.db_conn, 'Categories', vocab, option),
+                             fg="black", bg="light gray")
+        btn_add_category.grid(row=1, column=1, sticky='W')
 
     def add_listener(self):
         """When the add functionality the is selected from the menu, a drop down menu is presented that will allow
@@ -212,6 +238,22 @@ class database_interactor:
                              fg="black", bg="light gray", width=10)
         btn_compare.grid(row=9, column=0, sticky=W)
 
+    def add_comp(self):
+        selected_value = self.root.focus_get().get(ANCHOR)
+        add = Tk()
+        add.geometry("600x400")
+        # ic(self.inputs['display'].get(ANCHOR))
+        vocab = '~' + selected_value.split('~')[1][0:7]
+        text_entered = StringVar()
+        Label(add, text=selected_value).grid(row=0, column=0, sticky=W)
+        entry_box = Entry(add, textvariable=text_entered, font=self.medium_font, width=50)
+        entry_box.grid(row=1, column=0, sticky='W')
+        self.inputs['add'] = entry_box
+        btn_add_syn = Button(add, text='Add Synonym', font=self.medium_font,
+                             command=lambda: db_tools.add_other(self.db_conn, 'English_synonyms', vocab, entry_box),
+                             fg="black", bg="light gray")
+        btn_add_syn.grid(row=1, column=1)
+
     def compare_db(self):
         """compares the values between two different dictionaries and adds all of the compared values to two
         text boxes after being formatted for display"""
@@ -219,21 +261,22 @@ class database_interactor:
                                    self.inputs.get('different').get())
         dictionary = self.inputs.get('option1').get()
 
-        display1 = Text(self.root)
+        display1 = Listbox(self.root, width=100, height=20)
         display1.grid(row=2, column=0, sticky=W)
-        display2 = Text(self.root)
+        display2 = Listbox(self.root, width=100, height=20)
         display2.grid(row=2, column=5, sticky=W)
+        Button(self.root, text='Add', command=self.add_comp, font=self.medium_font).grid(row=1, column=9)
         for r in results[0]:
             vocab = r[0]
             term = r[1]
-            ins = '%s\n %s\t%s\n' % (dictionary, vocab, term)
-            display1.insert(INSERT, ins)
+            ins = '%s %s %s ' % (dictionary, vocab, term)
+            display1.insert('end', ins)
         dictionary = self.inputs.get('option2').get()
         for r in results[1]:
             vocab = r[0]
             term = r[1]
-            ins = '%s\n %s\t%s\n' % (dictionary, vocab, term)
-            display2.insert(INSERT, ins)
+            ins = '%s %s %s ' % (dictionary, vocab, term)
+            display2.insert('end', ins)
 
     def process_adds(self):
         """sends all of the add values to the db_tools module to be processed and added to the database.  Displays
@@ -269,19 +312,14 @@ class database_interactor:
 
     def search_val(self):
         """Displays all of the values returned by the db_tools search function to a text box in the UI"""
-        ic(self.inputs)
-        self.inputs.get('add_syn').config(state =NORMAL)
         val = self.inputs.get('search').get()
         display = self.inputs.get('display')
         display.delete(0, END)
         search_data = db_tools.search_value(val, self.db_conn)
-        # ic(search_data)
-        row = 0
         for data in search_data:
+            self.format_display(data, display)
 
-            row += self.format_display(row, data, display)
-
-    def format_display(self, row, data, display):
+    def format_display(self, data, display):
         """"formats and writes all of the values to the display seen in the UI
         SHOULD BE ABLE TO REMOVE THE VAL WITH THE NEW HANDLING OF SEARCH, WILL EDIT THIS OUT IF NOT NEEDED
         :param data, the data from the db table to be displayed in the textbox
@@ -292,44 +330,27 @@ class database_interactor:
         ic(data)
         dictionary = data[0]
         vocab = data[1]
-        add = 1
-
-
-        # cats = db_tools.get_categories(vocab)
-        # cat_dict = self.lang_to_dict.get(self.lang.get())
-        # for c in cats:
-        #     ic(c, db_tools.get_vocab(cat_dict, c[2]))
-        #     vocab = c[2]
-        #     term = db_tools.get_vocab(cat_dict, c[2])[1]
-        #     ins = '%s\n %s\t%s\n' % (c[0], vocab, term)
-        #     display.insert(INSERT, ins)
-        # syns
-        # if dictionary == 'Categories' or dictionary == 'English_synonyms':
-        #     ic(db_tools.get_vocab(dictionary, data[2]))
-        #     term = db_tools.get_vocab(dictionary,data[2])[1]
-        # else:
         term = data[2]
         ins = '%s   %s   %s' % (dictionary, vocab, term)
-        display.insert(row, ins)
+        display.insert('end', ins)
+        if dictionary == 'English_words':
+            if self.inputs.get('categories').get() == 1:
+                """to be displayed on the same line with all of the various categories on that line
+                catagories don't need to be present for the UMLS icd10 only primary langs"""
+                cats = db_tools.get_vocab('Categories', vocab)
+                ic(cats)
+                dic = 'Categories'
+                c_dict = self.lang_to_dict.get(self.lang.get())
+                if cats:
+                    ins = '%s \t\t  %s   %s' % (dic, vocab, ', '.join([db_tools.get_vocab(c_dict, val) for val in cats]))
+                    display.insert('end', ins)
+            if self.inputs.get('synonyms').get() == 1:
+                dic = 'English_synonyms'
+                syns = db_tools.get_vocab(dic, vocab)
+                if syns:
+                    ins = '%s \t\t  %s   %s' % (dic, vocab, ', '.join([val for val in syns]))
+                    display.insert('end', ins)
 
-        if self.inputs.get('categories').get() ==1:
-            """to be displayed on the same line with all of the various categories on that line
-            catagories don't need to be present for the UMLS icd10 only primary langs"""
-            cats = db_tools.get_categories(vocab)
-            for c in cats:
-                dictionary = c[0]
-                term = c[2]
-                ins = '%s \t\t  %s   %s' % (dictionary, vocab, term)
-                display.insert(row+add, ins)
-                add+=1
-        if self.inputs.get('synonyms').get() ==1:
-            syns = db_tools.get_synonyms(vocab)
-            ic(syns)
-
-            for s in syns:
-                dictionary = s[0]
-                term = s[2]
-                ins = '%s \t\t  %s   %s' % (dictionary, vocab, term)
-                display.insert(row+add, ins)
-                add+=1
-        return add
+    def succes_or_fail(self, window, val):
+        """will be used to display the successful or failed add to the database"""
+        pass
