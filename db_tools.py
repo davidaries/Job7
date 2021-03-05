@@ -60,7 +60,8 @@ def search_value(val, conn):
             if tbl not in tbl_special:
                 if val[0] != '~':
                     for d in all_dicts.get(tbl):
-                        if str(get_vocab(tbl, d).lower()).__contains__(val.lower()):
+                        ic(get_vocab(tbl, d))
+                        if str(get_vocab(tbl, d).lower()).__contains__(str(val).lower()):
                             values.append((tbl, d, get_vocab(tbl, d)))
                 else:
                     for d in all_dicts.get(tbl):
@@ -123,6 +124,26 @@ def get_remaining_categories(vocab):
     return cats
 
 
+def add_category_to_db(value, conn):
+    dic = 'English_words'
+    list_vals = [get_vocab(dic, v).lower() for v in all_dicts[dic].keys()]
+    other = '''{"category": true}'''
+    if value.get().lower() not in list_vals:
+        vocab = generate_vocab(conn)
+        addition_en = '''INSERT INTO %s (vocab, term, other)VALUES %s''' % (dic, (vocab, value.get(), other))
+        all_dicts[dic][vocab]= [value.get(), other]
+    else:
+        vocab = [v for v in all_dicts[dic].keys() if get_vocab(dic, v).lower() == value.get()][0]
+        if list(all_dicts[dic][vocab]):
+            return 'already in'
+        addition_en = '''UPDATE %s SET other = '%s' WHERE vocab = '%s' ''' % (dic, other, vocab)
+        pblob = process_blob((vocab, value.get(), other))
+        ic(pblob)
+        all_dicts[dic][vocab] = pblob
+    conn.execute(addition_en)
+    conn.commit()
+    return 'added to'
+
 def add_other(conn, dic, vocab, value):
     ic(dic, vocab, value.get())
     if value.get().__contains__('~'):
@@ -130,21 +151,26 @@ def add_other(conn, dic, vocab, value):
         ic(value)
     else:
         value = value.get()
+    ic(value,vocab)
     if vocab in all_dicts[dic].keys():
-        if value.lower() not in all_dicts[dic][vocab]:
+        ic(all_dicts[dic][vocab])
+        if value.lower() not in [v.lower() for v in all_dicts[dic][vocab]]:
             addition_en = '''INSERT INTO %s (vocab, term)VALUES %s''' % (dic, (vocab, value))
             conn.execute(addition_en)
             conn.commit()
             all_dicts[dic][vocab].append(value)
+        else:
+            return 'already in'
     else:
         addition_en = '''INSERT INTO %s (vocab, term)VALUES %s''' % (dic, (vocab, value))
         conn.execute(addition_en)
         conn.commit()
         all_dicts[dic][vocab] = [value]
+    return 'added to'
 
 
 def get_vocab(dic, vocab):
-    """returns a specific vocab value from a specific dictionary
+    """returns a specific ~vocab value from a specific dictionary
     :return: the value described above
     :rtype: str"""
     if type(all_dicts[dic].get(vocab)) is list and dic not in tbl_special:
@@ -153,23 +179,24 @@ def get_vocab(dic, vocab):
         return all_dicts[dic].get(vocab)
 
 
-def add_to_db(conn, add_dict):
+def add_to_db(conn, add_values):
     """adds values to the database and the dictionary used by the db interactor
     :param conn: connection to the database
     :type conn: sqlite3.Connection
-    :param add_dict: The value to be added to the database
-    :type add_dict: dict
+    :param add_values: The value to be added to the database
+    :type add_values: dict
     :return: a list of all of the values not added to the db and the dictionary
     :rtype: list
     """
+    ic(add_values)
     vocab = generate_vocab(conn)
-    keys = add_dict.keys()
+    keys = add_values.keys()
     to_process = []
     for k in keys:
-        if add_dict.get(k).get().lower() not in [v.lower() for v in all_dicts.get(k).values()]:
-            to_process.append([True, k, add_dict[k].get()])
+        if add_values.get(k).get().lower() not in [get_vocab(k, v).lower() for v in all_dicts[k]]:
+            to_process.append([True, k, add_values[k].get()])
         else:
-            to_process.append([False, k, add_dict[k].get()])
+            to_process.append([False, k, add_values[k].get()])
     unprocessed = []
     for p in to_process:
         if p[0]:
@@ -184,7 +211,9 @@ def add_to_db(conn, add_dict):
 
 
 def process_blob(val):
+
     converted = json.loads(val[2])
+    ic(val, [val[1], converted])
     return [val[1], converted]
 
 
